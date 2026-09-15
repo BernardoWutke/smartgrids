@@ -80,7 +80,7 @@
       border: 1px solid rgba(99,211,145,.35); color: var(--accent);
       background: rgba(99,211,145,.06);
     }
-    section { padding: 82px 0; border-top: 1px solid var(--line); }
+    section { padding: 82px 0; border-top: 1px solid var(--line); scroll-margin-top: 68px; }
     .section-title { margin-bottom: 35px; }
     .section-title p { color: var(--muted); max-width: 650px; }
     h2 { font-size: 2.3rem; letter-spacing: -.04em; margin: 0 0 8px; }
@@ -119,10 +119,57 @@
       background: radial-gradient(circle at center, rgba(99,211,145,.09), transparent 50%);
     }
     footer { border-top: 1px solid var(--line); padding: 25px 0; color: var(--muted); font-size: .9rem; }
+
+    /* --- Simulação LoRaWAN --- */
+    .lede { color: var(--muted); max-width: 720px; margin: 0 0 30px; }
+    .lede a { color: var(--accent-2); text-decoration: underline; text-decoration-color: rgba(183,240,202,.35); }
+    .subhead { font-size: 1.15rem; margin: 46px 0 16px; letter-spacing: -.02em; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 10px; }
+    .stat-tile { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+    .stat-tile .value { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; color: var(--accent-2); }
+    .stat-tile .label { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+    .stat-tile .delta { display: inline-block; margin-top: 10px; font-size: .8rem; font-weight: 700; color: var(--accent); background: rgba(99,211,145,.1); border: 1px solid rgba(99,211,145,.25); padding: 3px 8px; border-radius: 999px; }
+
+    .viz-root {
+      --chart-surface: var(--surface);
+      --ink-primary: var(--text);
+      --ink-secondary: var(--muted);
+      --ink-muted: #7c8c82;
+      --gridline: rgba(255,255,255,.07);
+      --baseline: rgba(255,255,255,.16);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      background: var(--chart-surface); border: 1px solid var(--line); border-radius: 18px;
+      padding: 22px 22px 14px; margin-bottom: 22px;
+    }
+    .viz-root h4 { margin: 0 0 2px; font-size: 1rem; }
+    .viz-root .viz-caption { color: var(--ink-secondary); font-size: .85rem; margin: 0 0 14px; max-width: 560px; }
+    .viz-root svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .viz-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; font-size: .82rem; color: var(--ink-secondary); }
+    .viz-legend .key { display: inline-flex; align-items: center; gap: 7px; }
+    .viz-legend .swatch { width: 16px; height: 0; border-top-width: 2px; border-top-style: solid; }
+    .viz-legend .swatch.dashed { border-top-style: dashed; }
+    .chart-tip {
+      position: fixed; pointer-events: none; z-index: 40; opacity: 0; transform: translateY(2px);
+      transition: opacity .1s ease, transform .1s ease;
+      background: #0a1712; border: 1px solid var(--line); border-radius: 10px;
+      padding: 8px 11px; font-size: .78rem; color: var(--text); box-shadow: 0 12px 30px rgba(0,0,0,.4);
+      white-space: nowrap;
+    }
+    .chart-tip.show { opacity: 1; transform: translateY(0); }
+    .chart-tip .t-g { color: var(--muted); }
+    .chart-point { cursor: pointer; }
+    .chart-point .hit { fill: transparent; }
+    .chart-point .dot { fill: var(--dot-color, var(--series-1)); }
+    .chart-point:hover .dot, .chart-point:focus .dot { r: 5.5; }
+
+    .innovation-card .tag.neg { color: var(--muted); background: rgba(255,255,255,.05); }
+
     @media (max-width: 800px) {
       .hero-grid, .project { grid-template-columns: 1fr; }
       .portrait { max-width: 380px; margin: auto; }
       .grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: 1fr; }
       .links { display: none; }
       .hero { padding-top: 75px; }
     }
@@ -136,6 +183,7 @@
         <a href="#sobre">Sobre</a>
         <a href="#pesquisa">Pesquisa</a>
         <a href="#projetos">Projetos</a>
+        <a href="#simulacao">Simulação</a>
         <a href="#contato">Contato</a>
       </div>
     </div>
@@ -260,6 +308,202 @@
       </div>
     </section>
 
+    <section id="simulacao">
+      <div class="container">
+        <div class="section-title">
+          <h2>Simulação: LoRaWAN em Agricultura de Precisão</h2>
+        </div>
+        <p class="lede">
+          Reprodução em Python do artigo
+          <a href="https://doi.org/10.3390/en16052356" target="_blank" rel="noopener">Correia et al. (2023), "LoRaWAN Gateway Placement in Smart Agriculture" (Energies, MDPI)</a>,
+          que planeja o número e a localização de gateways LoRaWAN para uma área de fruticultura de ~100 km² em Petrolina (PE),
+          comparando quatro algoritmos de clustering (K-Means, MiniBatch K-Means, Bisecting K-Means e Fuzzy c-Means).
+          Reimplementei o modelo de propagação, o protocolo LoRaWAN (ADR, Time-on-Air, colisões) e o modelo estocástico de energia
+          do zero, validei contra os resultados publicados e adicionei três extensões que o artigo original não cobre.
+        </p>
+
+        <h3 class="subhead">Três extensões além do artigo original</h3>
+        <div class="grid">
+          <article class="card innovation-card">
+            <h3>SF não-ortogonal</h3>
+            <p>
+              O artigo assume que spreading factors diferentes nunca colidem entre si. Modelei o efeito de
+              quase-ortogonalidade real (limiares de SIR entre SFs): com poucos gateways, isso reduz a ULDR estimada
+              em até 21 pontos percentuais.
+            </p>
+            <div style="margin-top:14px">
+              <span class="tag">Interferência co-canal</span><span class="tag">Capture effect</span>
+            </div>
+          </article>
+          <article class="card innovation-card">
+            <h3>Posicionamento por PSO</h3>
+            <p>
+              Testei um enxame de partículas otimizando a ULDR simulada diretamente, em vez da compacidade euclidiana
+              que os 4 algoritmos do artigo usam. Resultado honesto: empatou com K-Means neste ambiente isotrópico —
+              o que revela que a vantagem esperada do PSO só deve aparecer em terrenos heterogêneos.
+            </p>
+            <div style="margin-top:14px">
+              <span class="tag">Particle Swarm</span><span class="tag neg">Resultado neutro</span>
+            </div>
+          </article>
+          <article class="card innovation-card">
+            <h3>Vida útil de bateria</h3>
+            <p>
+              O artigo para na métrica de mJ por ciclo. Estendi o modelo de energia para projetar meses/anos até a
+              troca de bateria em campo — a métrica que realmente importa para quem opera a rede.
+            </p>
+            <div style="margin-top:14px">
+              <span class="tag">Planejamento de manutenção</span>
+            </div>
+          </article>
+        </div>
+
+        <h3 class="subhead">Validação: minha reprodução vs. o artigo original</h3>
+        <div class="viz-root">
+          <h4>ULDR vs. número de gateways (Cenário 1, T = 600 s, K-Means)</h4>
+          <p class="viz-caption">
+            Minha simulação em Python (N=500 sensores, área circular R=9 km) contra os valores publicados na Tabela 3
+            do artigo. Mesmo sem o polígono exato da plantação, a curva reproduz a forma e a faixa de valores do original.
+          </p>
+          <svg viewBox="0 0 640 340" role="img" aria-label="Gráfico de linhas comparando ULDR simulada e ULDR publicada no artigo, de 1 a 10 gateways">
+            <line x1="56" y1="300" x2="610" y2="300" stroke="var(--baseline)" stroke-width="1"/>
+            <g stroke="var(--gridline)" stroke-width="1">
+              <line x1="56" y1="231" x2="610" y2="231"/>
+              <line x1="56" y1="162" x2="610" y2="162"/>
+              <line x1="56" y1="93"  x2="610" y2="93"/>
+              <line x1="56" y1="24"  x2="610" y2="24"/>
+            </g>
+            <g fill="var(--ink-muted)" font-size="11" text-anchor="end">
+              <text x="48" y="304">0,90</text>
+              <text x="48" y="235">0,93</text>
+              <text x="48" y="166">0,95</text>
+              <text x="48" y="97">0,98</text>
+              <text x="48" y="28">1,00</text>
+            </g>
+            <g fill="var(--ink-muted)" font-size="11" text-anchor="middle">
+              <text x="56" y="316">1</text><text x="117.6" y="316">2</text><text x="179.1" y="316">3</text>
+              <text x="240.7" y="316">4</text><text x="302.2" y="316">5</text><text x="363.8" y="316">6</text>
+              <text x="425.3" y="316">7</text><text x="486.9" y="316">8</text><text x="548.4" y="316">9</text>
+              <text x="610" y="316">10</text>
+            </g>
+            <text x="333" y="334" fill="var(--ink-muted)" font-size="11" text-anchor="middle">G (número de gateways)</text>
+
+            <path d="M 56.0,165.3 L 117.6,105.7 L 179.1,81.4 L 240.7,75.9 L 302.2,54.9 L 363.8,59.3 L 425.3,43.9 L 486.9,46.1 L 548.4,43.9 L 610.0,37.2"
+                  fill="none" stroke="var(--series-1)" stroke-width="2"/>
+            <path d="M 56.0,211.4 L 117.6,141.0 L 179.1,108.2 L 240.7,87.2 L 302.2,69.5 L 363.8,70.1 L 425.3,46.6 L 486.9,42.5 L 548.4,41.1 L 610.0,37.8"
+                  fill="none" stroke="var(--series-2)" stroke-width="2" stroke-dasharray="6 4"/>
+
+            <g style="--dot-color:var(--series-1)">
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="1" data-v="0,9488"><circle class="hit" cx="56.0" cy="165.3" r="11"/><circle class="dot" cx="56.0" cy="165.3" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="2" data-v="0,9704"><circle class="hit" cx="117.6" cy="105.7" r="11"/><circle class="dot" cx="117.6" cy="105.7" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="3" data-v="0,9792"><circle class="hit" cx="179.1" cy="81.4" r="11"/><circle class="dot" cx="179.1" cy="81.4" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="4" data-v="0,9812"><circle class="hit" cx="240.7" cy="75.9" r="11"/><circle class="dot" cx="240.7" cy="75.9" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="5" data-v="0,9888"><circle class="hit" cx="302.2" cy="54.9" r="11"/><circle class="dot" cx="302.2" cy="54.9" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="6" data-v="0,9872"><circle class="hit" cx="363.8" cy="59.3" r="11"/><circle class="dot" cx="363.8" cy="59.3" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="7" data-v="0,9928"><circle class="hit" cx="425.3" cy="43.9" r="11"/><circle class="dot" cx="425.3" cy="43.9" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="8" data-v="0,9920"><circle class="hit" cx="486.9" cy="46.1" r="11"/><circle class="dot" cx="486.9" cy="46.1" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="9" data-v="0,9928"><circle class="hit" cx="548.4" cy="43.9" r="11"/><circle class="dot" cx="548.4" cy="43.9" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Minha simulação" data-g="10" data-v="0,9952"><circle class="hit" cx="610.0" cy="37.2" r="11"/><circle class="dot" cx="610.0" cy="37.2" r="3.5"/></g>
+            </g>
+            <g style="--dot-color:var(--series-2)">
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="1" data-v="0,9321"><circle class="hit" cx="56.0" cy="211.4" r="11"/><circle class="dot" cx="56.0" cy="211.4" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="2" data-v="0,9576"><circle class="hit" cx="117.6" cy="141.0" r="11"/><circle class="dot" cx="117.6" cy="141.0" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="3" data-v="0,9695"><circle class="hit" cx="179.1" cy="108.2" r="11"/><circle class="dot" cx="179.1" cy="108.2" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="4" data-v="0,9771"><circle class="hit" cx="240.7" cy="87.2" r="11"/><circle class="dot" cx="240.7" cy="87.2" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="5" data-v="0,9835"><circle class="hit" cx="302.2" cy="69.5" r="11"/><circle class="dot" cx="302.2" cy="69.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="6" data-v="0,9833"><circle class="hit" cx="363.8" cy="70.1" r="11"/><circle class="dot" cx="363.8" cy="70.1" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="7" data-v="0,9918"><circle class="hit" cx="425.3" cy="46.6" r="11"/><circle class="dot" cx="425.3" cy="46.6" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="8" data-v="0,9933"><circle class="hit" cx="486.9" cy="42.5" r="11"/><circle class="dot" cx="486.9" cy="42.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="9" data-v="0,9938"><circle class="hit" cx="548.4" cy="41.1" r="11"/><circle class="dot" cx="548.4" cy="41.1" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="Artigo (Tabela 3)" data-g="10" data-v="0,9950"><circle class="hit" cx="610.0" cy="37.8" r="11"/><circle class="dot" cx="610.0" cy="37.8" r="3.5"/></g>
+            </g>
+          </svg>
+          <div class="viz-legend">
+            <span class="key"><span class="swatch" style="border-color:var(--series-1)"></span>Minha simulação (Python)</span>
+            <span class="key"><span class="swatch dashed" style="border-color:var(--series-2)"></span>Correia et al. 2023 (Tabela 3)</span>
+          </div>
+        </div>
+
+        <h3 class="subhead">Extensão 1: interferência não-ortogonal entre spreading factors</h3>
+        <div class="viz-root">
+          <h4>ULDR vs. número de gateways (Cenário 2, T = 60 s, K-Means)</h4>
+          <p class="viz-caption">
+            Ao desligar a suposição de ortogonalidade perfeita entre SFs, a rede com poucos gateways perde bem mais pacotes
+            do que o artigo estima — o gap desaparece a partir de G≈4, quando o ADR já convergiu a maioria dos nós para o mesmo SF.
+          </p>
+          <svg viewBox="0 0 640 340" role="img" aria-label="Gráfico de linhas comparando ULDR com SFs ortogonais e não-ortogonais, de 1 a 8 gateways">
+            <line x1="56" y1="300" x2="610" y2="300" stroke="var(--baseline)" stroke-width="1"/>
+            <g stroke="var(--gridline)" stroke-width="1">
+              <line x1="56" y1="231" x2="610" y2="231"/>
+              <line x1="56" y1="162" x2="610" y2="162"/>
+              <line x1="56" y1="93"  x2="610" y2="93"/>
+              <line x1="56" y1="24"  x2="610" y2="24"/>
+            </g>
+            <g fill="var(--ink-muted)" font-size="11" text-anchor="end">
+              <text x="48" y="304">0,40</text>
+              <text x="48" y="235">0,54</text>
+              <text x="48" y="166">0,68</text>
+              <text x="48" y="97">0,81</text>
+              <text x="48" y="28">0,95</text>
+            </g>
+            <g fill="var(--ink-muted)" font-size="11" text-anchor="middle">
+              <text x="56" y="316">1</text><text x="135.1" y="316">2</text><text x="214.3" y="316">3</text>
+              <text x="293.4" y="316">4</text><text x="372.6" y="316">5</text><text x="451.7" y="316">6</text>
+              <text x="530.9" y="316">7</text><text x="610" y="316">8</text>
+            </g>
+            <text x="333" y="334" fill="var(--ink-muted)" font-size="11" text-anchor="middle">G (número de gateways)</text>
+
+            <path d="M 56.0,181.2 L 135.1,133.2 L 214.3,120.5 L 293.4,95.3 L 372.6,74.4 L 451.7,62.5 L 530.9,45.5 L 610.0,47.9"
+                  fill="none" stroke="var(--series-1)" stroke-width="2"/>
+            <path d="M 56.0,285.5 L 135.1,179.6 L 214.3,126.4 L 293.4,95.3 L 372.6,74.4 L 451.7,62.5 L 530.9,45.5 L 610.0,47.9"
+                  fill="none" stroke="var(--series-2)" stroke-width="2" stroke-dasharray="6 4"/>
+
+            <g style="--dot-color:var(--series-1)">
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="1" data-v="0,6368"><circle class="hit" cx="56.0" cy="181.2" r="11"/><circle class="dot" cx="56.0" cy="181.2" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="2" data-v="0,7324"><circle class="hit" cx="135.1" cy="133.2" r="11"/><circle class="dot" cx="135.1" cy="133.2" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="3" data-v="0,7576"><circle class="hit" cx="214.3" cy="120.5" r="11"/><circle class="dot" cx="214.3" cy="120.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="4" data-v="0,8080"><circle class="hit" cx="293.4" cy="95.3" r="11"/><circle class="dot" cx="293.4" cy="95.3" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="5" data-v="0,8496"><circle class="hit" cx="372.6" cy="74.4" r="11"/><circle class="dot" cx="372.6" cy="74.4" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="6" data-v="0,8732"><circle class="hit" cx="451.7" cy="62.5" r="11"/><circle class="dot" cx="451.7" cy="62.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="7" data-v="0,9072"><circle class="hit" cx="530.9" cy="45.5" r="11"/><circle class="dot" cx="530.9" cy="45.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF ortogonal (artigo)" data-g="8" data-v="0,9024"><circle class="hit" cx="610.0" cy="47.9" r="11"/><circle class="dot" cx="610.0" cy="47.9" r="3.5"/></g>
+            </g>
+            <g style="--dot-color:var(--series-2)">
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="1" data-v="0,4288"><circle class="hit" cx="56.0" cy="285.5" r="11"/><circle class="dot" cx="56.0" cy="285.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="2" data-v="0,6400"><circle class="hit" cx="135.1" cy="179.6" r="11"/><circle class="dot" cx="135.1" cy="179.6" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="3" data-v="0,7460"><circle class="hit" cx="214.3" cy="126.4" r="11"/><circle class="dot" cx="214.3" cy="126.4" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="4" data-v="0,8080"><circle class="hit" cx="293.4" cy="95.3" r="11"/><circle class="dot" cx="293.4" cy="95.3" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="5" data-v="0,8496"><circle class="hit" cx="372.6" cy="74.4" r="11"/><circle class="dot" cx="372.6" cy="74.4" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="6" data-v="0,8732"><circle class="hit" cx="451.7" cy="62.5" r="11"/><circle class="dot" cx="451.7" cy="62.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="7" data-v="0,9072"><circle class="hit" cx="530.9" cy="45.5" r="11"/><circle class="dot" cx="530.9" cy="45.5" r="3.5"/></g>
+              <g class="chart-point" tabindex="0" data-label="SF não-ortogonal (real)" data-g="8" data-v="0,9024"><circle class="hit" cx="610.0" cy="47.9" r="11"/><circle class="dot" cx="610.0" cy="47.9" r="3.5"/></g>
+            </g>
+          </svg>
+          <div class="viz-legend">
+            <span class="key"><span class="swatch" style="border-color:var(--series-1)"></span>SF ortogonal (suposição do artigo)</span>
+            <span class="key"><span class="swatch dashed" style="border-color:var(--series-2)"></span>SF não-ortogonal (modelo estendido)</span>
+          </div>
+        </div>
+
+        <h3 class="subhead">Extensão 3: da energia por ciclo à vida útil da bateria</h3>
+        <div class="stats">
+          <div class="stat-tile">
+            <div class="value">~2,5 anos</div>
+            <div class="label">1 gateway · Cenário 2 (T=60s) · bateria Li-SOCl₂ 3000 mAh</div>
+          </div>
+          <div class="stat-tile">
+            <div class="value">~7,1 anos</div>
+            <div class="label">20 gateways · Cenário 2 (T=60s) · mesma bateria</div>
+            <span class="delta">+184% de autonomia</span>
+          </div>
+          <div class="stat-tile">
+            <div class="value">28–75 anos</div>
+            <div class="label">Cenário 1 (T=600s, 1–10 gateways) — ilustrativo; parâmetros de energia aproximados</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section>
       <div class="container">
         <div class="section-title">
@@ -303,5 +547,33 @@
   <footer>
     <div class="container">© 2026 Bernardo Wutke de Oliveira · IoT & Sistemas Embarcados</div>
   </footer>
+
+  <div class="chart-tip" id="chart-tip"></div>
+  <script>
+    (function () {
+      var tip = document.getElementById('chart-tip');
+      var points = document.querySelectorAll('.chart-point');
+      function show(el, x, y) {
+        var label = el.getAttribute('data-label');
+        var g = el.getAttribute('data-g');
+        var v = el.getAttribute('data-v');
+        tip.innerHTML = '<span class="t-g">G=' + g + '</span> &nbsp;' + label + ': <strong>' + v + '</strong>';
+        tip.style.left = (x + 14) + 'px';
+        tip.style.top = (y - 14) + 'px';
+        tip.classList.add('show');
+      }
+      function hide() { tip.classList.remove('show'); }
+      points.forEach(function (el) {
+        el.addEventListener('mouseenter', function (e) { show(el, e.clientX, e.clientY); });
+        el.addEventListener('mousemove', function (e) { show(el, e.clientX, e.clientY); });
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('focus', function () {
+          var r = el.querySelector('.dot').getBoundingClientRect();
+          show(el, r.left, r.top);
+        });
+        el.addEventListener('blur', hide);
+      });
+    })();
+  </script>
 </body>
 </html>
