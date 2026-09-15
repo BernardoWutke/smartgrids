@@ -165,6 +165,46 @@
 
     .innovation-card .tag.neg { color: var(--muted); background: rgba(255,255,255,.05); }
 
+    /* --- Avatar 3D --- */
+    .avatar-widget { position: fixed; right: 20px; bottom: 20px; z-index: 35; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .avatar-stage {
+      width: 132px; height: 132px; position: relative;
+      filter: drop-shadow(0 16px 28px rgba(0,0,0,.5));
+      transition: filter .25s ease;
+    }
+    .avatar-stage canvas { width: 100%; height: 100%; display: block; }
+    .avatar-stage::after {
+      content: ""; position: absolute; inset: -6px; border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(99,211,145,.45); opacity: 0; pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .avatar-widget.speaking .avatar-stage::after { opacity: 1; animation: avatar-pulse 1.1s ease-out infinite; }
+    @keyframes avatar-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(99,211,145,.45); }
+      100% { box-shadow: 0 0 0 16px rgba(99,211,145,0); }
+    }
+    .avatar-bubble {
+      max-width: 240px; background: #0a1712; border: 1px solid var(--line); border-radius: 12px;
+      padding: 9px 13px; font-size: .78rem; line-height: 1.45; color: var(--text);
+      box-shadow: 0 14px 34px rgba(0,0,0,.45); text-align: left;
+    }
+    .avatar-bubble b { color: var(--accent-2); }
+    .avatar-bubble[hidden] { display: none; }
+    .avatar-toggle {
+      width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line);
+      background: var(--surface); color: var(--text); font-size: 14px; cursor: pointer;
+      display: grid; place-items: center; line-height: 1;
+    }
+    .avatar-toggle[aria-pressed="false"] { opacity: .4; }
+    .avatar-hint {
+      font-size: .68rem; color: var(--muted); text-align: center; max-width: 140px;
+    }
+
+    @media (max-width: 800px) {
+      .avatar-widget { right: 12px; bottom: 12px; }
+      .avatar-stage { width: 96px; height: 96px; }
+      .avatar-hint { display: none; }
+    }
     @media (max-width: 800px) {
       .hero-grid, .project { grid-template-columns: 1fr; }
       .portrait { max-width: 380px; margin: auto; }
@@ -572,6 +612,238 @@
           show(el, r.left, r.top);
         });
         el.addEventListener('blur', hide);
+      });
+    })();
+  </script>
+
+  <div class="avatar-widget" id="avatar-widget">
+    <div class="avatar-bubble" id="avatar-bubble" hidden></div>
+    <div class="avatar-stage" id="avatar-stage" aria-hidden="true"></div>
+    <button class="avatar-toggle" id="avatar-toggle" type="button" aria-pressed="true" title="Ativar/desativar leitura em voz alta">🔊</button>
+    <div class="avatar-hint" id="avatar-hint">Selecione um texto na página para eu ler em voz alta</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    (function () {
+      if (typeof THREE === 'undefined') return; // CDN unavailable: skip the avatar, rest of the page still works
+
+      var stageEl = document.getElementById('avatar-stage');
+      var widgetEl = document.getElementById('avatar-widget');
+
+      // --- Scene setup -------------------------------------------------
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(28, 1, 0.1, 10);
+      camera.position.set(0, 0.15, 5.2);
+
+      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      stageEl.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 1.05));
+      var key = new THREE.DirectionalLight(0xffffff, 1.15); key.position.set(2, 3, 4); scene.add(key);
+      var fill = new THREE.DirectionalLight(0x8fe0ab, 0.4); fill.position.set(-3, -1, 2); scene.add(fill);
+      var rim = new THREE.DirectionalLight(0x63d391, 0.55); rim.position.set(0, 2, -3); scene.add(rim);
+
+      // --- Mii-style bust (built entirely from primitives) -------------
+      var SKIN = 0xf0c39c, HAIR = 0x5a3d27, SHIRT = 0xc23b3b, MOUTH_C = 0x7a3b3b, EYE_C = 0x4a6b45;
+      var matte = function (c, extra) {
+        return new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.7, metalness: 0.04 }, extra || {}));
+      };
+
+      var avatar = new THREE.Group();
+
+      var head = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), matte(SKIN));
+      head.scale.set(1, 1.06, 0.94);
+      avatar.add(head);
+
+      var earGeo = new THREE.SphereGeometry(0.15, 16, 16);
+      var earMat = matte(SKIN);
+      var earL = new THREE.Mesh(earGeo, earMat); earL.position.set(-0.99, -0.05, 0); earL.scale.set(0.6, 1, 0.8);
+      var earR = earL.clone(); earR.position.x = 0.99;
+      avatar.add(earL, earR);
+
+      var earring = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.6 }));
+      earring.position.set(-1.05, -0.2, 0.05);
+      avatar.add(earring);
+
+      var hairCap = new THREE.Mesh(new THREE.SphereGeometry(1.06, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.4), matte(HAIR, { roughness: 0.85 }));
+      hairCap.position.y = 0.06;
+      avatar.add(hairCap);
+
+      var fringe = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 24), matte(HAIR, { roughness: 0.85 }));
+      fringe.scale.set(1.3, 0.45, 0.55);
+      fringe.position.set(0.2, 0.5, 0.78);
+      fringe.rotation.z = -0.3;
+      avatar.add(fringe);
+
+      function makeEye(x) {
+        var g = new THREE.Group();
+        var white = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), matte(0xffffff, { roughness: 0.3 }));
+        white.scale.set(1, 1.15, 0.6);
+        var pupil = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), matte(EYE_C, { roughness: 0.4 }));
+        pupil.position.z = 0.09;
+        var hi = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        hi.position.set(0.025, 0.03, 0.145);
+        g.add(white, pupil, hi);
+        g.position.set(x, 0.13, 0.87);
+        return g;
+      }
+      var eyeL = makeEye(-0.34), eyeR = makeEye(0.34);
+      avatar.add(eyeL, eyeR);
+
+      function makeBrow(x) {
+        var brow = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.045, 0.05), matte(HAIR));
+        brow.position.set(x, 0.33, 0.9);
+        brow.rotation.z = x < 0 ? 0.12 : -0.12;
+        return brow;
+      }
+      avatar.add(makeBrow(-0.34), makeBrow(0.34));
+
+      var nose = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.15, 12), matte(SKIN));
+      nose.position.set(0, -0.02, 0.98); nose.rotation.x = Math.PI / 2 + 0.35;
+      avatar.add(nose);
+
+      var mustache = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.07, 0.06), matte(HAIR));
+      mustache.position.set(0, -0.13, 0.94);
+      avatar.add(mustache);
+
+      var mouth = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.05), matte(MOUTH_C, { roughness: 0.5 }));
+      mouth.position.set(0, -0.23, 0.93);
+      avatar.add(mouth);
+
+      var goatee = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), matte(HAIR, { roughness: 0.85 }));
+      goatee.scale.set(0.85, 0.65, 0.55);
+      goatee.position.set(0, -0.38, 0.82);
+      avatar.add(goatee);
+
+      var body = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 1.15, 0.9, 32), matte(SHIRT, { roughness: 0.6 }));
+      body.position.y = -1.38;
+      avatar.add(body);
+
+      avatar.position.y = 0.15;
+      scene.add(avatar);
+
+      // --- Resize --------------------------------------------------------
+      function resize() {
+        var s = stageEl.clientWidth || 132;
+        renderer.setSize(s, s, false);
+        camera.aspect = 1;
+        camera.updateProjectionMatrix();
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // --- Idle / talking / look-around animation -------------------------
+      var clock = new THREE.Clock();
+      var speaking = false;
+      var mouthPulse = 0;
+      var targetYaw = 0, targetPitch = 0;
+      var blinkTimer = 2 + Math.random() * 2;
+
+      window.addEventListener('mousemove', function (e) {
+        var nx = (e.clientX / window.innerWidth) * 2 - 1;
+        var ny = (e.clientY / window.innerHeight) * 2 - 1;
+        targetYaw = nx * 0.35;
+        targetPitch = -ny * 0.15;
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        var dt = Math.min(clock.getDelta(), 0.05);
+        var t = clock.elapsedTime;
+
+        avatar.rotation.y += (targetYaw - avatar.rotation.y) * 0.06;
+        avatar.rotation.x += (targetPitch - avatar.rotation.x) * 0.06;
+        avatar.position.y = 0.15 + Math.sin(t * 1.1) * 0.045;
+
+        blinkTimer -= dt;
+        var blink = blinkTimer < 0.12 ? Math.max(0.08, 1 - (0.12 - blinkTimer) * 16) : 1;
+        eyeL.scale.y = eyeR.scale.y = blink;
+        if (blinkTimer < 0) blinkTimer = 2.2 + Math.random() * 2.6;
+
+        if (speaking) {
+          mouthPulse += dt * 14;
+          var open = 0.5 + Math.sin(mouthPulse) * 0.5;
+          mouth.scale.y = 1 + open * 2.6;
+          mouth.position.y = -0.23 - open * 0.03;
+        } else {
+          mouth.scale.y += (1 - mouth.scale.y) * 0.2;
+          mouth.position.y += (-0.23 - mouth.position.y) * 0.2;
+        }
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // --- Text-selection -> Portuguese speech synthesis -------------------
+      var bubble = document.getElementById('avatar-bubble');
+      var toggle = document.getElementById('avatar-toggle');
+      var hint = document.getElementById('avatar-hint');
+      var supportsSpeech = 'speechSynthesis' in window;
+      var muted = false;
+      try { muted = localStorage.getItem('avatarMuted') === '1'; } catch (e) {}
+
+      function setSpeaking(on) {
+        speaking = on;
+        widgetEl.classList.toggle('speaking', on);
+      }
+
+      function updateToggle() {
+        toggle.setAttribute('aria-pressed', String(!muted));
+        toggle.textContent = muted ? '🔇' : '🔊';
+      }
+      updateToggle();
+      if (!supportsSpeech) { hint.textContent = 'Leitura em voz alta não é suportada neste navegador'; toggle.style.display = 'none'; }
+
+      toggle.addEventListener('click', function () {
+        muted = !muted;
+        try { localStorage.setItem('avatarMuted', muted ? '1' : '0'); } catch (e) {}
+        updateToggle();
+        if (muted) { speechSynthesis.cancel(); setSpeaking(false); bubble.hidden = true; }
+      });
+
+      var ptVoice = null;
+      function pickVoice() {
+        var voices = speechSynthesis.getVoices();
+        ptVoice = voices.find(function (v) { return v.lang === 'pt-BR'; })
+          || voices.find(function (v) { return /^pt/i.test(v.lang); })
+          || null;
+      }
+      if (supportsSpeech) {
+        pickVoice();
+        speechSynthesis.addEventListener('voiceschanged', pickVoice);
+      }
+
+      function showBubble(text) {
+        bubble.innerHTML = '<b>Lendo em voz alta:</b> “' + text + '”';
+        bubble.hidden = false;
+      }
+
+      var lastRead = '';
+      document.addEventListener('mouseup', function (e) {
+        if (!supportsSpeech || muted) return;
+        if (widgetEl.contains(e.target)) return;
+        var text = String(window.getSelection()).trim();
+        if (text.length < 2 || text === lastRead) return;
+        lastRead = text;
+
+        var toRead = text.length > 600 ? text.slice(0, 600) + '…' : text;
+        speechSynthesis.cancel();
+        var utter = new SpeechSynthesisUtterance(toRead);
+        utter.lang = 'pt-BR';
+        if (ptVoice) utter.voice = ptVoice;
+        utter.rate = 1.0;
+        utter.onstart = function () { setSpeaking(true); showBubble(toRead.length > 140 ? toRead.slice(0, 140) + '…' : toRead); };
+        utter.onend = function () { setSpeaking(false); lastRead = ''; };
+        utter.onerror = function () { setSpeaking(false); };
+        speechSynthesis.speak(utter);
+      });
+
+      document.addEventListener('selectionchange', function () {
+        if (String(window.getSelection()).trim() === '') {
+          bubble.hidden = true;
+        }
       });
     })();
   </script>
